@@ -1,8 +1,11 @@
 const express = require('express');
+const bcrypt = require('bcrypt-nodejs');
+const cors = require('cors');
 
 const app = express();
 
 app.use(express.json());
+app.use(cors())
 
 const database = {
     users:[
@@ -32,7 +35,7 @@ app.get('/', (req, res)=>{
 app.post('/signin', (req,res)=>{
     //check if the users info on the frontend side matches what is in the backend (database)
     if (req.body.email === database.users[0].email && req.body.password === database.users[0].password){
-        res.json('sucess');
+        res.json('success');
     } else{
         res.status(400).json('error logging in');
     }
@@ -41,6 +44,9 @@ app.post('/signin', (req,res)=>{
 app.post('/register', (req, res)=>{
     //want to use the users input in order to make another instance of users
     const { email, name, password } =  req.body;
+    bcrypt.hash(password, null, null, function(err, hash){
+        console.log(hash);
+    })
     database.users.push({
         id: '125',
         name: name,
@@ -63,6 +69,22 @@ app.get('/profile/:id',(req, res)=>{
         if (user.id === id){
             found = true;
             return res.json(user);
+        } 
+    })
+    if (!found){
+        res.status(400).json('not found');
+    }
+})
+
+app.post('/image',(req, res)=>{
+    //update the entries based on how many images the user searched
+    const { id } = req.params;
+    let found = false;
+    database.users.forEach(user =>{
+        if (user.id === id){
+            found = true;
+            user.entries++;
+            return res.json(user.entries);
         } 
     })
     if (!found){
