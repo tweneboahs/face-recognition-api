@@ -35,7 +35,7 @@ app.get('/', (req, res)=>{
 app.post('/signin', (req,res)=>{
     //check if the users info on the frontend side matches what is in the backend (database)
     if (req.body.email === database.users[0].email && req.body.password === database.users[0].password){
-        res.json('success');
+        res.json(database.users[0]);
     } else{
         res.status(400).json('error logging in');
     }
@@ -51,7 +51,6 @@ app.post('/register', (req, res)=>{
         id: '125',
         name: name,
         email: email,
-        password: password,
         entries: 0,
         joined: new Date()
     })
@@ -76,9 +75,9 @@ app.get('/profile/:id',(req, res)=>{
     }
 })
 
-app.post('/image',(req, res)=>{
+app.put('/image',(req, res)=>{
     //update the entries based on how many images the user searched
-    const { id } = req.params;
+    const { id } = req.body;
     let found = false;
     database.users.forEach(user =>{
         if (user.id === id){
