@@ -3,18 +3,15 @@ const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
 const knex = require('knex');
 
-const postgres = knex({
+const db = knex({
     client: 'pg',
     connection: {
       host : '127.0.0.1',
-      port : 3306,
       user : 'sarahtweneboah',
       password : '',
       database : 'face-recognition'
     }
 });
-
-console.log(postgres.select('*').from('users'));
 
 const app = express();
 
@@ -58,51 +55,62 @@ app.post('/signin', (req,res)=>{
 app.post('/register', (req, res)=>{
     //want to use the users input in order to make another instance of users
     const { email, name, password } =  req.body;
-    bcrypt.hash(password, null, null, function(err, hash){
-        console.log(hash);
-    })
-    database.users.push({
-        id: '125',
-        name: name,
-        email: email,
-        entries: 0,
-        joined: new Date()
-    })
-    //always remember to respond
-    //display the user we just input
-    res.json(database.users[database.users.length-1]);
+    const hash = bcrypt.hashSync(password);
+    //create a transaction to make sure both register and login have the same credentials(if one fails  -> then they both fail)
+    db.transaction(trx =>{
+        trx.insert({
+            hash: hash;
+            email: email
+        })
+        .into('login')
+        .returning('email')
+        .then(loginEmail =>{
+            return trx('users')
+            .returning('*')
+                .insert({
+                    email: loginEmail[0].email,
+                    name: name,
+                    joined: new Date()
+                })
+                //always remember to respond
+                //display the user we just input from the .returning call in knex
+                .then(user =>{
+                    res.json(user[0]);
+                })
+        })
+        .then(trx.commit)
+        .catch(trx.rollback)
+    })    
+    //remember to not give the user too much info on why they cld not register
+    .catch(err => res.status(400).json('unable to register'))
 })
 
 app.get('/profile/:id',(req, res)=>{
     //want to grab the id property
     //if id matches what is in the database we want to return with the user info
     const { id } = req.params;
-    let found = false;
-    database.users.forEach(user =>{
-        if (user.id === id){
-            found = true;
-            return res.json(user);
-        } 
+    db.select('*').from('users').where({
+        id: id
+    }).then(user=>{
+        if(user.length){
+            res.json(user[0]);
+        } else {
+            res.status(400).json('Not found')
+        }
     })
-    if (!found){
-        res.status(400).json('not found');
-    }
+    .catch(err=> res.status(400).json('error getting user'))
 })
 
 app.put('/image',(req, res)=>{
     //update the entries based on how many images the user searched
     const { id } = req.body;
-    let found = false;
-    database.users.forEach(user =>{
-        if (user.id === id){
-            found = true;
-            user.entries++;
-            return res.json(user.entries);
-        } 
+    db('users').where('id', '=', id)
+    .increment('entries', 1)
+    .returning('entries')
+    .then(entries=>{
+        res.json(entries[0].entries);
     })
-    if (!found){
-        res.status(400).json('not found');
-    }
+    .catch(err => res.status(400).json('unable to get entries'))
 })
 
 app.listen(3000, ()=>{
