@@ -18,38 +18,30 @@ const app = express();
 app.use(express.json());
 app.use(cors())
 
-const database = {
-    users:[
-        {
-            id: '123',
-            name: 'John',
-            email: 'john@gmail.com',
-            password: 'cookies',
-            entries: 0,
-            joined: new Date()
-        },
-        {
-            id: '124',
-            name: 'Sally',
-            email: 'sally@gmail.com',
-            password: 'bananas',
-            entries: 0,
-            joined: new Date()
-        }
-    ]
-}
-
 app.get('/', (req, res)=>{
-    res.send(database.users);
+    res.send('Success');
 })
 
 app.post('/signin', (req,res)=>{
     //check if the users info on the frontend side matches what is in the backend (database)
-    if (req.body.email === database.users[0].email && req.body.password === database.users[0].password){
-        res.json(database.users[0]);
-    } else{
-        res.status(400).json('error logging in');
-    }
+    db.select('email','hash').from('login')
+        .where('email', '=', req.body.email)
+        .then(data =>{
+            //if this returns true then the user has entered the correct password
+            const isValid = bcrypt.compareSync(req.body.password, data[0].hash);
+            if (isValid){
+                return db.select('*').from('users')
+                    .where('email', '=', req.body.email)
+                    .then(user=>{
+                        console.log(user);
+                        res.json(user[0]);
+                    })
+                    .catch(err => res.status(400).json('unable to get user'))
+            } else {
+                res.status(400).json('wrong credentials')
+            }
+        })
+        .catch(err => res.status(400).json('wrong credentials'))
 });
 
 app.post('/register', (req, res)=>{
@@ -59,7 +51,7 @@ app.post('/register', (req, res)=>{
     //create a transaction to make sure both register and login have the same credentials(if one fails  -> then they both fail)
     db.transaction(trx =>{
         trx.insert({
-            hash: hash;
+            hash: hash,
             email: email
         })
         .into('login')
@@ -67,22 +59,23 @@ app.post('/register', (req, res)=>{
         .then(loginEmail =>{
             return trx('users')
             .returning('*')
-                .insert({
-                    email: loginEmail[0].email,
-                    name: name,
-                    joined: new Date()
-                })
-                //always remember to respond
-                //display the user we just input from the .returning call in knex
-                .then(user =>{
-                    res.json(user[0]);
-                })
+            .insert({
+                email: loginEmail[0].email,
+                name: name,
+                joined: new Date()
+            })
+            //always remember to respond
+            //display the user we just input from the .returning call in knex
+            .then(user =>{
+                res.json(user[0]);
+            })
         })
+        //if everything above passes -> commit
         .then(trx.commit)
         .catch(trx.rollback)
     })    
     //remember to not give the user too much info on why they cld not register
-    .catch(err => res.status(400).json('unable to register'))
+    .catch(err => res.status(400).json('Unable to Register'))
 })
 
 app.get('/profile/:id',(req, res)=>{
