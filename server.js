@@ -24,13 +24,13 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.get('/', (req, res)=>{res.send('Success')});
-app.post('/signin', (req, res) =>{signin.handleSignin(req, res, db, bcrypt)});
-app.post('/register', (req, res) =>{register.handleRegister(req,res, db, bcrypt)});
+app.get('/', (req, res) => {res.send('it is working')});
+app.post('/signin', (req, res) => {signin.handleSignin(req, res, db, bcrypt)});
+app.post('/register', (req, res) => {register.handleRegister(req,res, db, bcrypt)});
 app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, db) });
 app.put('/image', (req, res) => { image.handleImage(req, res, db) });
 app.post('/imageurl', (req, res) => { image.handleApiCall(req, res) });
 
-app.listen(process.env.PORT || 3000, ()=>{
-    console.log(`here i am on port ${process.env.PORT}`)
+app.listen(process.env.PORT || 3000, ()=> {
+    console.log(`here i am`)
 });
