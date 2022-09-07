@@ -1,7 +1,7 @@
 {
   "name": "face-recognition-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "build backend of face-recognition app",
   "main": "server.js",
   "engines": {
     "node": "16.15.0"
@@ -13,15 +13,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devDependencies": {
-    "nodemon": "^2.0.19"
-  },
   "dependencies": {
     "bcrypt-nodejs": "^0.0.3",
     "clarifai": "^2.9.1",
     "cors": "^2.8.5",
     "express": "^4.18.1",
     "knex": "^2.1.0",
-    "pg": "^8.7.3"
+    "pg": "^8.7.3",
+    "nodemon": "^2.0.19"
   }
 }
